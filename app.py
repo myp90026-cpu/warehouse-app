@@ -35,7 +35,7 @@ st.title("🏭 Warehouse Transfer App")
 menu = st.sidebar.radio("Choose your task:", ["📦 Send Stock", "📥 Receive Stock"])
 
 # --- යවන කෙනාගේ කොටස (SENDER) ---
-if menu == "📦 Send Stock ":
+if menu == "📦 Send Stock":
     st.header("Sending new shipments")
     
     with st.form("send_form"):
@@ -141,3 +141,4 @@ elif menu == "📥 Receive Stock":
                         st.rerun() # Refresh page
     else:
         st.error("Error retrieving data. Check column names.")
+
