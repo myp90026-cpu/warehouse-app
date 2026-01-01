@@ -32,33 +32,36 @@ except Exception as e:
 st.title("🏭 Warehouse Transfer App")
 
 # Sidebar එක - Sender ද Receiver ද කියලා තෝරන්න
-menu = st.sidebar.radio("ඔයාගේ කාර්යය තෝරන්න:", ["📦 Send Stock (යවන්න)", "📥 Receive Stock (බාරගන්න)"])
+menu = st.sidebar.radio("Choose your task:", ["📦 Send Stock", "📥 Receive Stock"])
 
 # --- යවන කෙනාගේ කොටස (SENDER) ---
-if menu == "📦 Send Stock (යවන්න)":
-    st.header("නව තොග යැවීම")
+if menu == "📦 Send Stock ":
+    st.header("Sending new shipments")
     
     with st.form("send_form"):
         col1, col2 = st.columns(2)
         
         with col1:
             sku = st.text_input("SKU Number")
-            origin = st.selectbox("පිටත් වන Warehouse එක", [ "WH 3"])
-            sender_name = st.text_input("Supervisor නම")
+            origin = st.selectbox("The departing warehouse", [ "WH 3"])
+            sender_name = st.text_input("Supervisor name")
             
         with col2:
-            box_count = st.number_input("පෙට්ටි ගණන", min_value=1, step=1)
-            destination = st.selectbox("ලැබෙන Warehouse එක", ["WH 1", "WH 2", "WH 5","WH VENUS"])
+            box_count = st.number_input("Number of boxes", min_value=1, step=1)
+            destination = st.selectbox("The warehouse that will be received", ["WH 1", "WH 2", "WH 5","WH VENUS"])
             
-        # දිනය සහ වෙලාව Auto ගන්නවා
-        current_date = datetime.now().strftime("%Y-%m-%d")
-        current_time = datetime.now().strftime("%H:%M:%S")
-        
-        submitted = st.form_submit_button("Submit Transfer")
+       # ලංකාවේ Timezone එක සෙට් කිරීම
+            lk_tz = pytz.timezone('Asia/Colombo') 
+            
+
+        # දැන් වෙලාව ගන්නේ ලංකාවට අනුව
+            current_date = datetime.now(lk_tz).strftime("%Y-%m-%d")
+            current_time = datetime.now(lk_tz).strftime("%H:%M:%S")
+            submitted = st.form_submit_button("Submit Transfer")
         
         if submitted:
             if not sku or not sender_name:
-                st.warning("කරුණාකර SKU සහ නම ඇතුලත් කරන්න.")
+                st.warning("Please enter SKU and name.")
             else:
                 # Unique ID එකක් හදමු (වෙලාව පදනම් කරගෙන)
                 transfer_id = int(datetime.now().timestamp())
@@ -79,11 +82,11 @@ if menu == "📦 Send Stock (යවන්න)":
                 ]
                 
                 sheet.append_row(new_row)
-                st.success(f"සාර්ථකයි! Transfer ID: {transfer_id} යටතේ ඇතුලත් විය.")
+                st.success(f"Success! Transfer ID: {transfer_id} Included under.")
 
 # --- බාරගන්න කෙනාගේ කොටස (RECEIVER) ---
-elif menu == "📥 Receive Stock (බාරගන්න)":
-    st.header("තොග බාරගැනීම")
+elif menu == "📥 Receive Stock":
+    st.header("Receiving shipments")
     
     # 1. Sheet එකේ Data ඔක්කොම ගන්නවා
     data = sheet.get_all_records()
@@ -94,27 +97,27 @@ elif menu == "📥 Receive Stock (බාරගන්න)":
         pending_items = df[df['Status'] == 'Sent']
         
         if pending_items.empty:
-            st.info("දැනට බාරගැනීමට අලුත් තොග කිසිවක් නැත.")
+            st.info("There is currently no new stock to accept.")
         else:
-            st.write("බාරගැනීමට ඇති තොග:")
+            st.write("Available stocks:")
             # ලිස්ට් එක පෙන්නනවා
             st.dataframe(pending_items[['Transfer_ID', 'SKU', 'Origin_Warehouse', 'Sent_Box_Count', 'Date']])
             
             # බාරගන්න අදාළ ID එක තෝරන්න
-            selected_id = st.selectbox("බාරගන්නා Transfer ID එක තෝරන්න:", pending_items['Transfer_ID'].unique())
+            selected_id = st.selectbox("Select the Transfer ID to receive:", pending_items['Transfer_ID'].unique())
             
             st.divider()
-            st.subheader("බාරගැනීමේ විස්තර")
+            st.subheader("Receive details")
             
             with st.form("receive_form"):
                 rec_name = st.text_input("Receiver (Supervisor) නම")
-                rec_count = st.number_input("ලැබුණු පෙට්ටි ගණන (Received Count)", min_value=0)
+                rec_count = st.number_input("Received Count", min_value=0)
                 
                 confirm = st.form_submit_button("Confirm Receipt")
                 
                 if confirm:
                     if not rec_name:
-                        st.warning("කරුණාකර ඔබේ නම ඇතුලත් කරන්න.")
+                        st.warning("Please enter your name.")
                     else:
                         # Update කරන්න ඕන පේළිය හොයාගැනීම
                         cell = sheet.find(str(selected_id))
@@ -134,7 +137,7 @@ elif menu == "📥 Receive Stock (බාරගන්න)":
                         sheet.update_cell(row_num, 12, rec_count) # Received Count
                         sheet.update_cell(row_num, 13, rec_name)  # Receiver Name
                         
-                        st.success("බඩු බාරගැනීම සාර්ථකව Update කරන ලදී!")
+                        st.success("The goods receipt was successfully updated!")
                         st.rerun() # Refresh page
     else:
-        st.error("Data ලබා ගැනීමේ දෝෂයක්. Column names පරීක්ෂා කරන්න.")
+        st.error("Error retrieving data. Check column names.")
